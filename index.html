@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sales & Profit Chart from DSV</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+        }
+        canvas { 
+            max-width: 800px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+    <h2>Monthly Sales & Profit (from DSV)</h2>
+    <canvas id="myChart"></canvas>
+
+    <script>
+    async function getData() {
+        const resp = await fetch('data.dsv');
+        const text = await resp.text();
+
+        const labels = [];
+        const sales = [];
+        const profit = [];
+
+        const rows = text.trim().split(/\r?\n/).slice(1).filter(r => r.trim() !== '');
+        rows.forEach(row => {
+            const cols = row.split('|');  // '|' delimiter
+            labels.push(cols[0].trim());
+            sales.push(parseFloat(cols[1].trim()) || 0);
+            profit.push(parseFloat(cols[2].trim()) || 0);
+        });
+
+        return { labels, sales, profit };
+    }
+
+    async function createChart() {
+        const { labels, sales, profit } = await getData();
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sales',
+                        data: sales,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Profit',
+                        data: profit,
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: true } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    createChart().catch(err => {
+        console.error(err);
+        document.body.insertAdjacentHTML('beforeend', '<p style="color:red">Error loading data — make sure you opened via Live Server.</p>');
+    });
+    </script>
+</body>
+</html>
